@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 // Fetch interview details
 if (isset($_GET['id'])) {
     $interview_id = $_GET['id'];
-    $sql = "SELECT i.id, i.interviewer_id, i.applicant_id, i.scheduled_time, 
+    $sql = "SELECT i.id, i.interviewer_id, i.applicant_id, i.scheduled_time, i.status,
                    ir.name AS interviewer_name, a.name AS applicant_name
             FROM interviews i
             JOIN interviewers ir ON i.interviewer_id = ir.id
@@ -56,6 +56,7 @@ $applicants = getApplicants($conn); // Function from functions.php
             
             <!-- Interviewer Field -->
             <div class="form-group">
+                <label for="interviewer">Interviewer</label>
                 <select id="interviewer" name="interviewer" required>
                     <option value="" disabled>Select Interviewer</option>
                     <?php foreach ($interviewers as $interviewer): ?>
@@ -64,11 +65,11 @@ $applicants = getApplicants($conn); // Function from functions.php
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <label for="interviewer">Interviewer</label>
             </div>
 
             <!-- Applicant Field -->
             <div class="form-group">
+                <label for="applicant">Applicant</label>
                 <select id="applicant" name="applicant" required>
                     <option value="" disabled>Select Applicant</option>
                     <?php foreach ($applicants as $applicant): ?>
@@ -77,14 +78,24 @@ $applicants = getApplicants($conn); // Function from functions.php
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <label for="applicant">Applicant</label>
             </div>
 
             <!-- Scheduled Time Field -->
             <div class="form-group">
-                <input type="datetime-local" id="scheduled_time" name="scheduled_time" value="<?= date('Y-m-d\TH:i', strtotime($interview['scheduled_time'])) ?>" required>
                 <label for="scheduled_time">Scheduled Time</label>
+                <input type="datetime-local" id="scheduled_time" name="scheduled_time" value="<?= date('Y-m-d\TH:i', strtotime($interview['scheduled_time'])) ?>" required>
             </div>
+
+            <!-- Status Field (Optional)-->
+            <!--<div class="form-group">
+                <label for="status">Interview Status</label>
+                <select id="status" name="status" required>
+                    <option value="" disabled>Select Status</option>
+                    <option value="upcoming" <?= ($interview['status'] ?? '') == 'upcoming' ? 'selected' : '' ?>>Upcoming</option>
+                    <option value="rescheduled" <?= ($interview['status'] ?? '') == 'rescheduled' ? 'selected' : '' ?>>Rescheduled</option>
+                    <option value="cancelled" <?= ($interview['status'] ?? '') == 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                </select>
+            </div>-->
 
             <!-- Buttons -->
             <button type="submit">Update Interview</button>

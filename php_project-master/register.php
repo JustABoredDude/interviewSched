@@ -6,12 +6,14 @@ require_once 'db.php';
 $error = ''; // Variable to store error messages
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
 
     // Validate email format
     if (!filter_var($username, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email format. Please use a valid email address (e.g., example@gmail.com).";
+    } elseif (empty($password)) {
+        $error = "Password cannot be empty.";
     } else {
         // Check if the username (email) already exists
         $sql = "SELECT * FROM users WHERE username = ?";
@@ -23,12 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows > 0) {
             $error = "Email already exists.";
         } else {
-            // Insert new user
-          $sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+            // Hash the password before storing it
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-
+            // Insert new user with hashed password
+            $sql = "INSERT INTO users (username, password) VALUES (?, ?)";
             $stmt = $conn->prepare($sql);
-            $stmt->bind_param("ss", $username, $password);
+            $stmt->bind_param("ss", $username, $hashed_password);
 
             if ($stmt->execute()) {
                 header("Location: login.php");
@@ -57,12 +60,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1>Register</h1>
         <?php if (!empty($error)): ?>
             <div class="error-message">
-                <?= $error ?>
+                <?= htmlspecialchars($error) ?>
             </div>
         <?php endif; ?>
         <form method="POST">
             <div class="form-group">
-                <input type="email" id="username" name="username" required placeholder=" ">
+                <input type="email" id="username" name="username" required placeholder=" " 
+                       value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>">
                 <label for="username">Email</label>
             </div>
             <div class="form-group">

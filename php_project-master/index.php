@@ -108,19 +108,28 @@ $interviews = array_filter($all_interviews, function ($interview) use ($status_f
     <!-- Vanilla Calendar JS -->
     <script src="https://cdn.jsdelivr.net/npm/@uvarov.frontend/vanilla-calendar@1.4.5/vanilla-calendar.min.js"></script>
     <script>
-    // Initialize the calendar
+    // Initialize the calendar with navigation enabled
     const calendar = new VanillaCalendar('#calendar', {
         settings: {
-            lang: 'en', // Language
+            lang: 'en',
             visibility: {
-                theme: 'light', // Light theme
+                theme: 'light',
+                monthShort: false,
+            },
+            selection: {
+                day: 'single',
+            },
+            navigation: {
+                enabled: true,
+                scroll: true,
+                buttonPrev: '‹',
+                buttonNext: '›',
             },
         },
     });
 
     calendar.init();
 
-    // Confirmation for cancel action
     function confirmCancel() {
         return confirm("Are you sure you want to cancel this interview?");
     }
