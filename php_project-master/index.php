@@ -10,12 +10,20 @@ if (!isset($_SESSION['user_id'])) {
 
 $selected_department = $_GET['department'] ?? null;
 $status_filter = $_GET['status'] ?? 'scheduled'; // Default to scheduled
+$sort_order = $_GET['sort'] ?? 'asc'; // Default to ascending order
 
 $all_interviews = getInterviews($conn, $selected_department, $status_filter);
 
 // Filter interviews by status manually
 $interviews = array_filter($all_interviews, function ($interview) use ($status_filter) {
     return isset($interview['status']) && $interview['status'] === $status_filter;
+});
+
+// Sort interviews by department
+usort($interviews, function ($a, $b) use ($sort_order) {
+    return $sort_order === 'asc'
+        ? strcmp($a['interviewer_department'], $b['interviewer_department'])
+        : strcmp($b['interviewer_department'], $a['interviewer_department']);
 });
 ?>
 
@@ -26,17 +34,14 @@ $interviews = array_filter($all_interviews, function ($interview) use ($status_f
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interview Scheduling System</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Vanilla Calendar CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@uvarov.frontend/vanilla-calendar@1.4.5/vanilla-calendar.min.css">
 </head>
 <body>
     <div class="container">
-        <!-- Calendar Container -->
-        <div id="calendar" class="calendar-container"></div>
-
         <header class="nav">
             <h1>Interview Scheduling System</h1>
             <div>
+            <a href="add_interview.php" class="logout-btn">Create Interview</a>
+            <a href="add_interview.php" class="logout-btn">Users</a>
                 <a href="logout.php" class="logout-btn">Logout</a>
             </div>
         </header>
@@ -51,17 +56,22 @@ $interviews = array_filter($all_interviews, function ($interview) use ($status_f
                     <option value="COED" <?= ($selected_department == 'COED') ? 'selected' : '' ?>>COED</option>
                     <option value="CAS" <?= ($selected_department == 'CAS') ? 'selected' : '' ?>>CAS</option>
                 </select>
+
+                <label for="sort">Sort by Department:</label>
+                <select name="sort" id="sort" onchange="this.form.submit()">
+                    <option value="asc" <?= ($sort_order == 'asc') ? 'selected' : '' ?>>Ascending</option>
+                    <option value="desc" <?= ($sort_order == 'desc') ? 'selected' : '' ?>>Descending</option>
+                </select>
             </form>
 
+            
             <div class="status-filters">
-                <a href="index.php?status=scheduled" class="<?= ($status_filter == 'scheduled') ? 'active' : '' ?>">Scheduled</a>
-                <a href="index.php?status=cancelled" class="<?= ($status_filter == 'cancelled') ? 'active' : '' ?>">Cancelled</a>
-                <a href="index.php?status=rescheduled" class="<?= ($status_filter == 'rescheduled') ? 'active' : '' ?>">Rescheduled</a>
+                <select name="status" id="status" onchange="window.location.href='index.php?status=' + this.value">
+                    <option value="scheduled" <?= ($status_filter == 'scheduled') ? 'selected' : '' ?>>Scheduled</option>
+                    <option value="cancelled" <?= ($status_filter == 'cancelled') ? 'selected' : '' ?>>Cancelled</option>
+                    <option value="rescheduled" <?= ($status_filter == 'rescheduled') ? 'selected' : '' ?>>Rescheduled</option>
+                </select>
             </div>
-        </section>
-
-        <section class="add-schedule">
-            <a href="add_interview.php" class="button">+ Add Schedule</a>
         </section>
 
         <h2><?= ucfirst($status_filter) ?> Interviews</h2>
@@ -71,11 +81,14 @@ $interviews = array_filter($all_interviews, function ($interview) use ($status_f
                 <?php foreach ($interviews as $interview): ?>
                     <div class="card">
                         <div class="card-header">
-                            <span class="day"><?= date('l', strtotime($interview['scheduled_time'])) ?></span>
-                            <span class="time"><?= date('h:i A', strtotime($interview['scheduled_time'])) ?> - 
-                                <?= date('h:i A', strtotime($interview['scheduled_time'] . ' +30 minutes')) ?>
-                            </span>
-                        </div>
+                        <span class="date"><?= date('F j, Y', strtotime($interview['scheduled_time'])) ?></span>
+                        <span class="day"><?= date('l', strtotime($interview['scheduled_time'])) ?></span>
+                        <span class="time">
+                    <?= date('h:i A', strtotime($interview['scheduled_time'])) ?> -
+                    <?= date('h:i A', strtotime($interview['scheduled_time'] . ' +30 minutes')) ?>
+                </span>
+            </div>
+
                         <div class="card-body">
                             <p><strong>Applicant:</strong> <?= htmlspecialchars($interview['applicant'] ?? 'N/A') ?></p>
                             <p><strong>Email:</strong> <?= htmlspecialchars($interview['applicant_email'] ?? 'N/A') ?></p>
@@ -84,55 +97,14 @@ $interviews = array_filter($all_interviews, function ($interview) use ($status_f
                         </div>
                         <div class="card-footer">
                             <a href="edit_interview.php?id=<?= $interview['id'] ?>" class="button edit-btn">Edit</a>
-
-                            <?php if ($status_filter == 'scheduled'): ?>
-                                <form method="post" action="cancel_interview.php" class="inline-form" onsubmit="return confirmCancel();">
-                                    <input type="hidden" name="id" value="<?= $interview['id'] ?>">
-                                    <button type="submit" class="button cancel-btn">Cancel</button>
-                                </form>
-
-                                <form method="post" action="reschedule_interview.php" class="inline-form">
-                                    <input type="hidden" name="id" value="<?= $interview['id'] ?>">
-                                    <button type="submit" class="button reschedule-btn">Reschedule</button>
-                                </form>
-                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>
             </div>
+            <a href="add_schedule_interview.php" class="logout-btn">Add Schedule</a>
         <?php else: ?>
             <p>No <?= $status_filter ?> interviews found.</p>
         <?php endif; ?>
     </div>
-
-    <!-- Vanilla Calendar JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@uvarov.frontend/vanilla-calendar@1.4.5/vanilla-calendar.min.js"></script>
-    <script>
-    // Initialize the calendar with navigation enabled
-    const calendar = new VanillaCalendar('#calendar', {
-        settings: {
-            lang: 'en',
-            visibility: {
-                theme: 'light',
-                monthShort: false,
-            },
-            selection: {
-                day: 'single',
-            },
-            navigation: {
-                enabled: true,
-                scroll: true,
-                buttonPrev: '‹',
-                buttonNext: '›',
-            },
-        },
-    });
-
-    calendar.init();
-
-    function confirmCancel() {
-        return confirm("Are you sure you want to cancel this interview?");
-    }
-    </script>
 </body>
 </html>

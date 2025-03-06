@@ -65,13 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
         <form method="POST">
             <div class="form-group">
+            <label for="username">Email</label>
                 <input type="email" id="username" name="username" required placeholder=" " 
                        value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>">
-                <label for="username">Email</label>
             </div>
             <div class="form-group">
+            <label for="password">Password</label>
                 <input type="password" id="password" name="password" required placeholder=" ">
-                <label for="password">Password</label>
             </div>
             <button type="submit">Register</button>
         </form>

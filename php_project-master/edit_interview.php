@@ -25,7 +25,6 @@ if (isset($_GET['id'])) {
     $interview = $result->fetch_assoc();
 
     if (!$interview) {
-        // If no interview is found, redirect to index.php
         header("Location: index.php");
         exit();
     }
@@ -34,9 +33,8 @@ if (isset($_GET['id'])) {
     exit();
 }
 
-// Fetch interviewers and applicants for dropdowns
-$interviewers = getInterviewers($conn); // Function from db.php
-$applicants = getApplicants($conn); // Function from functions.php
+$interviewers = getInterviewers($conn);
+$applicants = getApplicants($conn);
 ?>
 
 <!DOCTYPE html>
@@ -54,7 +52,6 @@ $applicants = getApplicants($conn); // Function from functions.php
         <form action="update_interview.php" method="POST">
             <input type="hidden" name="id" value="<?= $interview['id'] ?>">
             
-            <!-- Interviewer Field -->
             <div class="form-group">
                 <label for="interviewer">Interviewer</label>
                 <select id="interviewer" name="interviewer" required>
@@ -67,7 +64,6 @@ $applicants = getApplicants($conn); // Function from functions.php
                 </select>
             </div>
 
-            <!-- Applicant Field -->
             <div class="form-group">
                 <label for="applicant">Applicant</label>
                 <select id="applicant" name="applicant" required>
@@ -80,24 +76,21 @@ $applicants = getApplicants($conn); // Function from functions.php
                 </select>
             </div>
 
-            <!-- Scheduled Time Field -->
             <div class="form-group">
                 <label for="scheduled_time">Scheduled Time</label>
                 <input type="datetime-local" id="scheduled_time" name="scheduled_time" value="<?= date('Y-m-d\TH:i', strtotime($interview['scheduled_time'])) ?>" required>
             </div>
 
-            <!-- Status Field (Optional)-->
-            <!--<div class="form-group">
+            <div class="form-group">
                 <label for="status">Interview Status</label>
                 <select id="status" name="status" required>
                     <option value="" disabled>Select Status</option>
-                    <option value="upcoming" <?= ($interview['status'] ?? '') == 'upcoming' ? 'selected' : '' ?>>Upcoming</option>
+                    <option value="scheduled" <?= ($interview['status'] ?? '') == 'scheduled' ? 'selected' : '' ?>>In Schedule</option>
                     <option value="rescheduled" <?= ($interview['status'] ?? '') == 'rescheduled' ? 'selected' : '' ?>>Rescheduled</option>
                     <option value="cancelled" <?= ($interview['status'] ?? '') == 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
                 </select>
-            </div>-->
+            </div>
 
-            <!-- Buttons -->
             <button type="submit">Update Interview</button>
             <a href="index.php" class="cancel-button">Cancel</a>
         </form>

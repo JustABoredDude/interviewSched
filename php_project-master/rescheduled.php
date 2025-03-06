@@ -9,7 +9,22 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $selected_department = $_GET['department'] ?? null;
-$interviews = getInterviews($conn, $selected_department, 'rescheduled'); // Only rescheduled interviews
+$status_filter = $_GET['status'] ?? 'rescheduled'; // Default to rescheduled
+$sort_order = $_GET['sort'] ?? 'asc'; // Default to ascending order
+
+$all_interviews = getInterviews($conn, $selected_department, $status_filter);
+
+// Filter interviews by status manually
+$interviews = array_filter($all_interviews, function ($interview) use ($status_filter) {
+    return isset($interview['status']) && $interview['status'] === $status_filter;
+});
+
+// Sort interviews by department
+usort($interviews, function ($a, $b) use ($sort_order) {
+    return $sort_order === 'asc'
+        ? strcmp($a['interviewer_department'], $b['interviewer_department'])
+        : strcmp($b['interviewer_department'], $a['interviewer_department']);
+});
 ?>
 
 <!DOCTYPE html>
@@ -17,7 +32,7 @@ $interviews = getInterviews($conn, $selected_department, 'rescheduled'); // Only
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rescheduled Interviews</title>
+    <title><?= ucfirst($status_filter) ?> Interviews</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -39,16 +54,24 @@ $interviews = getInterviews($conn, $selected_department, 'rescheduled'); // Only
                     <option value="COED" <?= ($selected_department == 'COED') ? 'selected' : '' ?>>COED</option>
                     <option value="CAS" <?= ($selected_department == 'CAS') ? 'selected' : '' ?>>CAS</option>
                 </select>
+
+                <label for="sort">Sort by Department:</label>
+                <select name="sort" id="sort" onchange="this.form.submit()">
+                    <option value="asc" <?= ($sort_order == 'asc') ? 'selected' : '' ?>>Ascending</option>
+                    <option value="desc" <?= ($sort_order == 'desc') ? 'selected' : '' ?>>Descending</option>
+                </select>
             </form>
 
             <div class="status-filters">
-                <a href="index.php">Scheduled</a>
-                <a href="cancelled.php">Cancelled</a>
-                <a href="rescheduled.php" class="active">Rescheduled</a>
+                <select name="status" id="status" onchange="window.location.href='rescheduled.php?status=' + this.value + '&department=<?= $selected_department ?>&sort=<?= $sort_order ?>'">
+                    <option value="scheduled" <?= ($status_filter == 'scheduled') ? 'selected' : '' ?>>Scheduled</option>
+                    <option value="cancelled" <?= ($status_filter == 'cancelled') ? 'selected' : '' ?>>Cancelled</option>
+                    <option value="rescheduled" <?= ($status_filter == 'rescheduled') ? 'selected' : '' ?>>Rescheduled</option>
+                </select>
             </div>
         </section>
 
-        <h2>Rescheduled Interviews</h2>
+        <h2><?= ucfirst($status_filter) ?> Interviews</h2>
         <?php if (!empty($interviews)): ?>
             <div class="interviews-list">
                 <?php foreach ($interviews as $interview): ?>
@@ -66,27 +89,14 @@ $interviews = getInterviews($conn, $selected_department, 'rescheduled'); // Only
                             <p><strong>Department:</strong> <?= htmlspecialchars($interview['interviewer_department'] ?? 'N/A') ?></p>
                         </div>
                         <div class="card-footer">
-                            <form method="post" action="cancel_interview.php" onsubmit="return confirmAction('Are you sure you want to cancel this interview?');">
-                                <input type="hidden" name="id" value="<?= $interview['id'] ?>">
-                                <button type="submit" class="button cancel-btn">Cancel</button>
-                            </form>
-                            <form method="post" action="reschedule_interview.php" onsubmit="return confirmAction('Are you sure you want to reschedule this interview?');">
-                                <input type="hidden" name="id" value="<?= $interview['id'] ?>">
-                                <button type="submit" class="button reschedule-btn">Reschedule</button>
-                            </form>
+                            <a href="edit_interview.php?id=<?= $interview['id'] ?>" class="button edit-btn">Edit</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
             </div>
         <?php else: ?>
-            <p>No rescheduled interviews found.</p>
+            <p>No <?= $status_filter ?> interviews found.</p>
         <?php endif; ?>
     </div>
-
-    <script>
-    function confirmAction(message) {
-        return confirm(message);
-    }
-    </script>
 </body>
 </html>
